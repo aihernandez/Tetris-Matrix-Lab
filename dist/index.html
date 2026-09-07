@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive Tetris lab for learning 2D matrices, collisions, rotations, and row clearing." />
+  <title>Tetris Matrix Lab</title>
+  <link rel="stylesheet" href="./vendor/highlight/github-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#workspace" aria-label="Go to the board">
+      <span class="brand-mark" aria-hidden="true">▦</span>
+      <span>TETRIS <b>MATRIX LAB</b></span>
+    </a>
+    <div class="session-stats" aria-label="Game statistics">
+      <div><span>SCORE</span><strong id="score">000000</strong></div>
+      <div><span>LINES</span><strong id="lines">00</strong></div>
+      <div><span>LEVEL</span><strong id="level">01</strong></div>
+    </div>
+    <button class="sound-button" id="soundButton" type="button" aria-label="Toggle sound" aria-pressed="false">SOUND: OFF</button>
+  </header>
+
+  <div class="runtime-notice" id="runtimeNotice" role="status">
+    <strong>The lab needs a local server.</strong>
+    <span>Open a terminal in the project folder, run <code>npm start</code>, and visit <code>http://localhost:8080</code>. Do not open this file by double-clicking it.</span>
+  </div>
+
+  <main id="workspace">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">LAB 01 · 2D MATRICES</p>
+        <h1 id="page-title">Learn the algorithm <span>by watching it decide.</span></h1>
+      </div>
+      <p class="intro-copy">Every move lights up the cells inspected by the engine. Play, pause, and step through a cycle to connect the code with the matrix.</p>
+    </section>
+
+    <section class="engine-switcher" aria-labelledby="engine-selector-title">
+      <div class="engine-switch-copy">
+        <p class="eyebrow">SAME RULES · DIFFERENT STATE</p>
+        <h2 id="engine-selector-title">Choose the engine to run</h2>
+      </div>
+      <div class="engine-options" role="group" aria-label="Tetris engine">
+        <button class="engine-option active" type="button" data-engine="single-matrix" aria-pressed="true">
+          <span>01</span><b>Single matrix</b><small>SingleMatrixEngine</small>
+        </button>
+        <button class="engine-option" type="button" data-engine="layered-matrix" aria-pressed="false">
+          <span>02</span><b>Separate layers</b><small>LayeredMatrixEngine</small>
+        </button>
+      </div>
+      <div class="active-engine-summary">
+        <span>RUNNING</span>
+        <strong id="engineClassName">SingleMatrixEngine</strong>
+        <code id="memoryModel">matrix[20][10] stores fixed blocks and the active piece</code>
+        <small id="encodingModel">−1…−7 = active piece · 1…7 = fixed blocks</small>
+      </div>
+    </section>
+
+    <section class="lab-shell" aria-label="Interactive Tetris lab">
+      <aside class="lesson-panel panel">
+        <div class="panel-heading">
+          <span>LEARNING PATH</span>
+          <strong id="progressLabel">0 / 4</strong>
+        </div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+        <nav class="lesson-list" aria-label="Lab topics">
+          <button class="lesson active" type="button" data-lesson="representation">
+            <span class="lesson-index">01</span>
+            <span><b>Representation</b><small>Board + piece</small></span>
+            <i>◉</i>
+          </button>
+          <button class="lesson" type="button" data-lesson="collision">
+            <span class="lesson-index">02</span>
+            <span><b>Collisions</b><small>Bounds + cells</small></span>
+            <i>○</i>
+          </button>
+          <button class="lesson" type="button" data-lesson="rotation">
+            <span class="lesson-index">03</span>
+            <span><b>Rotation</b><small>Transpose + reverse</small></span>
+            <i>○</i>
+          </button>
+          <button class="lesson" type="button" data-lesson="clear">
+            <span class="lesson-index">04</span>
+            <span><b>Clear rows</b><small>Filter + insert</small></span>
+            <i>○</i>
+          </button>
+        </nav>
+
+        <div class="matrix-card">
+          <div class="mini-heading"><span>LOCAL PIECE MATRIX</span><code id="pieceName">T = 6</code></div>
+          <div class="mini-matrix" id="pieceMatrix" aria-label="Current piece matrix"></div>
+          <p id="matrixLiteral">[[0,1,0], [1,1,1]]</p>
+        </div>
+
+        <div class="legend">
+          <span><i class="legend-cell active-cell"></i>Negative: active</span>
+          <span><i class="legend-cell ghost-cell"></i>Landing spot</span>
+          <span><i class="legend-cell probe-cell"></i>Read cell</span>
+        </div>
+      </aside>
+
+      <section class="game-panel panel">
+        <div class="board-header">
+          <div>
+            <span class="status-dot" id="statusDot"></span>
+          <strong id="gameStatus">PAUSED</strong>
+          </div>
+          <span>10 COLUMNS × 20 ROWS</span>
+        </div>
+        <div class="board-wrap">
+          <div class="coordinate y-axis" aria-hidden="true"><span>00</span><span>05</span><span>10</span><span>15</span><span>19</span></div>
+          <div id="board" class="board" role="grid" aria-label="Tetris board, 10 by 20"></div>
+          <div class="coordinate x-axis" aria-hidden="true"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></div>
+        </div>
+
+        <div class="primary-controls">
+          <button id="toggleButton" class="button primary" type="button"><span>▶</span> RUN</button>
+              <button id="stepButton" class="button" type="button"><span>↧</span> ONE STEP</button>
+          <button id="resetButton" class="button icon-button" type="button" aria-label="Restart game">↻</button>
+        </div>
+        <div class="piece-controls" aria-label="Large piece controls">
+          <button class="move-button" type="button" data-game-action="left" aria-label="Move piece left">
+            <span aria-hidden="true">←</span><small>LEFT</small>
+          </button>
+          <button class="move-button" type="button" data-game-action="right" aria-label="Move piece right">
+            <span aria-hidden="true">→</span><small>RIGHT</small>
+          </button>
+          <button class="move-button" type="button" data-game-action="down" aria-label="Move piece down one row">
+            <span aria-hidden="true">↓</span><small>DOWN</small>
+          </button>
+          <button class="move-button accent" type="button" data-game-action="rotate" aria-label="Rotate piece">
+            <span aria-hidden="true">↻</span><small>ROTATE</small>
+          </button>
+          <button class="move-button accent drop-control" type="button" data-game-action="drop" aria-label="Drop piece to the bottom">
+            <span aria-hidden="true">⇊</span><small>DROP</small>
+          </button>
+        </div>
+        <div class="keyboard-help" aria-label="Keyboard controls">
+          <span><kbd>←</kbd><kbd>→</kbd> MOVE</span>
+          <span><kbd>↓</kbd> DOWN</span>
+          <span><kbd>↑</kbd> ROTATE</span>
+          <span><kbd>SPACE</kbd> DROP</span>
+        </div>
+      </section>
+
+      <aside class="code-panel panel">
+        <div class="panel-heading">
+          <span>ENGINE CODE · <b id="engineFile">single-matrix-engine.js</b></span>
+          <span class="language-pill">JAVASCRIPT</span>
+        </div>
+        <div class="algorithm-tabs" role="tablist" aria-label="Algorithms">
+          <button id="collisionTab" class="algorithm-tab active" type="button" role="tab" aria-selected="true" aria-controls="codeView" data-algorithm="collision">COLLISION</button>
+          <button id="rotationTab" class="algorithm-tab" type="button" role="tab" aria-selected="false" aria-controls="codeView" data-algorithm="rotation">ROTATION</button>
+          <button id="clearTab" class="algorithm-tab" type="button" role="tab" aria-selected="false" aria-controls="codeView" data-algorithm="clear">ROWS</button>
+        </div>
+        <div class="source-context">
+          <span id="sourceContextLabel">EXECUTION PATH</span>
+          <span class="current-line-indicator" id="currentLineIndicator" aria-live="polite" hidden>▶ LINE --</span>
+          <div class="source-actions">
+            <code id="engineMethod">spawn()</code>
+            <button id="sourceModeButton" type="button">VIEW METHOD</button>
+            <button class="open-source-explorer" id="openSourceExplorerButton" type="button">FULL CODE</button>
+          </div>
+        </div>
+        <pre class="code-view" id="codeView" role="tabpanel" aria-labelledby="collisionTab" tabindex="0">Loading engine code…</pre>
+        <div class="decision-card" id="decisionCard" aria-live="polite">
+          <div><span>LATEST DECISION</span><strong id="decisionBadge">NO COLLISION</strong></div>
+          <p id="decisionText">The proposed position is within the board and does not touch occupied blocks.</p>
+          <div class="trace-block">
+            <span>EXECUTION TRACE</span>
+            <ol id="executionTrace"></ol>
+          </div>
+          <dl>
+            <div><dt>Cells read</dt><dd id="cellsRead">4</dd></div>
+            <div><dt>Writes</dt><dd id="boardWrites">8</dd></div>
+            <div><dt>Result</dt><dd id="decisionResult">false</dd></div>
+            <div><dt>Complexity</dt><dd>O(h × w)</dd></div>
+          </dl>
+        </div>
+      </aside>
+    </section>
+
+    <section class="lesson-explainer" aria-live="polite">
+      <div class="lesson-copy">
+        <p class="eyebrow" id="lessonKicker">CONCEPT 01</p>
+        <h2 id="lessonTitle">Two ways to store the same game</h2>
+        <p id="lessonDescription">Switch engines to see whether the active piece lives in the main matrix or in its own layer with a separate position.</p>
+      </div>
+      <div class="formula-card">
+        <span>LIVE OPERATION</span>
+        <div class="formula" id="formula">visibleState = engine.getVisibleMatrix()</div>
+        <p id="formulaNote">Both engines return the same normalized view even though their internal memory differs.</p>
+      </div>
+      <div class="challenge-card">
+        <span>QUICK CHECK</span>
+        <p id="challengeQuestion">Which engine moves a piece without writing to board?</p>
+        <div class="challenge-options" id="challengeOptions">
+          <button type="button" data-answer="wrong">Single matrix</button>
+          <button type="button" data-answer="correct">Separate layers</button>
+        </div>
+        <small id="challengeFeedback">Choose an answer.</small>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="source-explorer" id="sourceExplorer" aria-labelledby="sourceExplorerTitle">
+    <div class="source-explorer-shell">
+      <header class="source-explorer-header">
+        <div>
+          <p>LAB EXPLORER</p>
+          <h2 id="sourceExplorerTitle">Complete source code</h2>
+          <span>Choose a module, search for an instruction, and read concise teaching comments.</span>
+        </div>
+        <div class="source-explorer-header-actions">
+          <span class="highlighter-badge" id="highlighterBadge">HIGHLIGHT.JS 11.12.0</span>
+          <button id="closeSourceExplorerButton" type="button" aria-label="Close code viewer">×</button>
+        </div>
+      </header>
+
+      <div class="source-explorer-toolbar">
+        <label>
+          <span>SEARCH IN FILE</span>
+          <input id="sourceSearchInput" type="search" placeholder="Example: checkPlacement" autocomplete="off" />
+        </label>
+        <button id="nextSourceMatchButton" type="button">NEXT</button>
+        <output id="sourceSearchStatus" aria-live="polite">NO SEARCH</output>
+        <button id="copySourceButton" type="button">COPY CODE</button>
+      </div>
+
+      <div class="source-explorer-layout">
+        <aside class="source-library" aria-label="Lab files">
+          <div>
+            <span>AVAILABLE FILES</span>
+            <strong>Select a module to load</strong>
+          </div>
+          <nav id="sourceFileList" aria-label="Source code library"></nav>
+          <p><b>//</b> Green comments are explanations added by the viewer. They do not change the code that runs the game.</p>
+        </aside>
+
+        <section class="full-source-panel" aria-labelledby="fullSourcePath">
+          <div class="full-source-heading">
+            <div>
+              <span id="fullSourceGroup">ENGINE</span>
+              <strong id="fullSourcePath">dist/js/engines/single-matrix-engine.js</strong>
+            </div>
+            <div>
+              <span id="fullSourceLineCount">0 LINES</span>
+              <span id="fullSourceExecutionStatus">LATEST EXECUTION</span>
+            </div>
+          </div>
+          <p class="full-source-description" id="fullSourceDescription"></p>
+          <pre class="full-code-scroll" tabindex="0" aria-label="Complete source code with line numbers"><code class="full-code-view hljs" id="fullCodeView">Loading source code…</code></pre>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <footer>
+    <span>TETRIS MATRIX LAB</span>
+    <p>Built to study state, transformations, and algorithmic complexity.</p>
+    <a href="#page-title">BACK TO TOP ↑</a>
+  </footer>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
