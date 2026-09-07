@@ -1,0 +1,18 @@
+{
+  "name": "tetris-matrix-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check dist/js/app.js && node --check dist/js/content.js && node --check dist/js/matrix.js && node --check dist/js/pieces.js && node --check dist/js/source-view.js && node --check dist/js/engines/engine-contract.js && node --check dist/js/engines/engine-factory.js && node --check dist/js/engines/single-matrix-engine.js && node --check dist/js/engines/layered-matrix-engine.js && node --check scripts/serve.mjs",
+    "verify": "npm run check && npm test"
+  },
+  "dependencies": {
+    "@highlightjs/cdn-assets": "^11.12.0"
+  }
+}
