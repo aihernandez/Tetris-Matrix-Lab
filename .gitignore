@@ -1,0 +1,13 @@
+# Keep the repository limited to source, documentation, tests, and required runtime assets.
+*
+!.gitignore
+!LICENSE
+!README.md
+!package.json
+!package-lock.json
+!dist/
+!dist/**
+!scripts/
+!scripts/**
+!tests/
+!tests/**
