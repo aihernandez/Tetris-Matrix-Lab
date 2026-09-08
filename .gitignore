@@ -3,6 +3,8 @@
 !.gitignore
 !LICENSE
 !README.md
+!assets/
+!assets/tetris-matrix-lab-preview.gif
 !package.json
 !package-lock.json
 !dist/

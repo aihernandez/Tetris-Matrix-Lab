@@ -9,6 +9,8 @@
 
 An interactive laboratory for learning how a Tetris core uses two-dimensional matrices. Play the game, advance one operation at a time, compare two engine implementations, and connect each move to the real JavaScript source code that ran.
 
+![Animated preview of the Tetris Matrix Lab interface](assets/tetris-matrix-lab-preview.gif)
+
 ## Purpose
 
 The lab connects three views that are often learned separately:
